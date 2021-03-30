@@ -1,0 +1,113 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+
+if(!require(dplyr)){install.packages("base")}
+if(!require(dplyr)){install.packages("rpart")}
+if(!require(dplyr)){install.packages("WeightedROC")}
+if(!require(dplyr)){install.packages("rpart.plot")}
+#library(dplyr)
+#library(ggplot2)
+library(WeightedROC)
+library(rpart)
+library(rpart.plot)
+library(base)
+
+```
+
+
+```{r setup, include=FALSE}
+#import data
+highDim <- read.csv("../data/highDim_dataset.csv")
+lowDim <- read.csv("../data/lowDim_dataset.csv")
+```
+
+1 treatment indicator variable (A) and 1 continuous response variable (Y ).
+
+
+
+
+
+
+```{r}
+# data pre-processing
+# features are the predictors: V1 - Vp
+# column 1 is the response Y
+# column 2 is the treatment A
+feature_train_high = highDim[, -1:-2]
+label_train_high = highDim[, 2]
+feature_train_low = lowDim[, -1:-2]
+label_train_low = lowDim[, 2]
+
+```
+
+#Propensity Score Estimation
+
+```{r}
+# imbalanced dataset requires weights 
+# to be used in the trained model
+
+weights_high <- rep(NA, length(highDim$A))
+for (v in unique(highDim$A)){
+  weights_high[highDim$A == v] = 0.5 * length(highDim$A) / length(highDim$A[highDim$A == v])
+}
+
+
+weights_low <- rep(NA, length(lowDim$A))
+for (v in unique(lowDim$A)){
+  weights_low[lowDim$A == v] = 0.5 * length(lowDim$A) / length(lowDim$A[lowDim$A == v])
+}
+
+```
+
+```{r}
+#propensity score estimate using regression tree for high dimension dataset
+start.time_propensity_score_high <- Sys.time()
+
+# create tree model for high dimensional data with best cp parameter
+Reg_tree_high <- rpart(A ~ . - Y, method = "class", data = highDim)
+
+# calculate propensity scores
+propensity_score_high <- predict(Reg_tree_high, newdata = highDim[, -2], type = "prob")[, 2]
+
+end.time_propensity_score_high <- Sys.time()
+time_propensity_score_high <- end.time_propensity_score_high - start.time_propensity_score_high
+time_propensity_score_high
+
+```
+```{r}
+#ploy regression tree
+rpart.plot(Reg_tree_high, type = 1, digits = 3, fallen.leaves = TRUE)
+
+```
+
+```{r}
+#propensity score estimate using regression tree for low dimension dataset
+start.time_propensity_score_low <- Sys.time()
+
+# create tree model for low dimensional data with best cp parameter
+Reg_tree_low <- rpart(A ~ . - Y, method = "class", data = lowDim)
+
+# calculate propensity scores
+prop_score_low <- predict(Reg_tree_low, newdata = lowDim[, -2], type = "prob")[, 2]
+
+end.time_propensity_score_low <- Sys.time()
+time_propensity_score_low <- end.time_propensity_score_low - start.time_propensity_score_low
+time_propensity_score_low
+```
+```{r}
+#ploy regression tree
+rpart.plot(Reg_tree_low, type = 1, digits = 3, fallen.leaves = TRUE)
+
+```
+
+
+
+
+
+
+
+
