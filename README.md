@@ -4,8 +4,8 @@
 
 Term: Spring 2021
 
-+ Team #
-+ Projec title: Lorem ipsum dolor sit amet
++ Team #8
++ Projec title: Causal Inference
 + Team members
 	+ team member 1
 	+ team member 2
