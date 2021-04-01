@@ -24,15 +24,24 @@ First, we set working directories as needed, install required libraries and impo
 ```
 
 ```{r, warning = FALSE, message = FALSE, echo = FALSE}
-packages.used <- c("dplyr", "ggplot2", "WeightedROC", "rpart", "rpart.plot")
-
-# check packages that need to be installed.
-packages.needed <- setdiff(packages.used, intersect(installed.packages()[,1], packages.used))
-
-# install additional packages
-if(length(packages.needed) > 0){
-   install.packages(packages.needed, dependencies = TRUE)
+packages.used=as.list(
+  c("data.table",
+    "ggplot2",
+    "dplyr",
+    "rpart",
+    "rpart.plot",
+    "WeightedROC",
+    "MatchIt",
+    "optmatch",
+    "lmtest",
+    "sandwich")
+)
+check.pkg = function(x){
+  if(!require(x, character.only=T)) install.packages(x, 
+                                                     character.only=T,
+                                                     dependence=T)
 }
+lapply(packages.used, check.pkg)
 
 library(dplyr)
 library(ggplot2)
@@ -40,11 +49,23 @@ library(WeightedROC)
 library(rpart)
 library(rpart.plot)
 library(base)
+library(MatchIt)
+library(data.table)
+library(optmatch)
+library(lmtest)
+library(sandwich)
 ```
 
 ```{r}
-df_high <- read.csv("../data/highDim_dataset.csv")
-df_low <- read.csv("../data/lowDim_dataset.csv")
+#directory containing the data
+data_dir <- "../data/" # This will be modified for different data sets.
+highDim_csv <- paste(data_dir, "highDim_dataset.csv", sep="")
+lowDim_csv <- paste(data_dir, "lowDim_dataset.csv", sep="")
+
+
+#read csv
+df_high <- read.csv(highDim_csv)
+df_low <- read.csv(lowDim_csv)
 ```
 
 ## Introduction 
@@ -649,9 +670,120 @@ time_stratification_low
 
 We find that the ATE for the low dimensional dataset was `r round(ATE_stratification_low, 3)` with a run time of `r round(time_stratification_low, 3)` seconds. 
 
+
+
+Weighting, full matching and subclassification methods instead use all individuals
+These methods can be thought of as giving all individuals (either implicit or explicit) weights between 0 and 1
+
+1. Subclassification forms groups of individuals who are similar
+    - current convention is to use 5–10 subclasses, however larger sample sizes can have more subclasses(10-20)
+2. Full matching is a more sophisticated form of subclassification
+    - Full matching creates a series of matched sets.
+    - where each matched set contains at least one treated individual and at least one control individual
+3. Weigthing
+  
 ### Propensity Matching using Propensity Score from Regression Trees
+```{r}
+source("../lib/propensity_matching.R")
+
+match_High_Dim <- get_match_obj(read.csv(highDim_csv))
+match_Low_Dim <- get_match_obj(read.csv(lowDim_csv))
 
 
+#g.matches <- get_matches(matchit.out, data = Any_Dim_Data, distance = prop_score_column_name)
+# creates a dataset with one row per unit. It will be identical to the dataset supplied except 
+# that several new columns will be added containing information related to the matching
+g.matches_high <- match.data(match_High_Dim, data = read.csv(highDim_csv), distance = "prop_score")
+g.matches_low <- match.data(match_Low_Dim, data = read.csv(lowDim_csv), distance = "prop_score")
+```
+
+###Estimating Effects After Matching
+
+We diagnose the quality of the resulting matched samples.
+We would would like the treatment to be unrelated to the covariates such that:
+$$\tilde{p}(X|T=1)=\tilde{p}(X|T=0)$$
+where $\tilde{p}$ denotes the empirical distribution.
+
+
+a plot of the standardized differences of means, gives us a quick overview of
+whether balance has improved for individual covariates
+```{r}
+#plot(summary(match_Low_Dim, interactions = TRUE), var.order = "unmatched")
+
+plot(summary(match_Low_Dim, subclass = TRUE),
+     var.order = "unmatched", abs = FALSE)
+
+plot(summary(match_Low_Dim, subclass = TRUE),
+     var.order = "unmatched", abs = TRUE)
+```
+the standardized difference of means of each covariate has decreased after matching
+For regression adjustment to be trustworthy, the absolute standardized differences of means should be less than 0.25
+
+
+For continuous covariates, we can also examine
+quantile–quantile (QQ) plots, which compare the empirical distributions of each variable
+
+
+QQ plots compare the quantiles of a variable
+in the treatment group against the corresponding quantiles in the control group. If the two groups have identical empirical distributions, all points would lie on the 45 degree line
+
+
+Statistics related to the difference in the empirical cumulative density functions (eCDFs) of each covariate between groups allow assessment of imbalance across the entire covariate distribution of that covariate rather than just its mean or variance.
+```{r}
+plot(match_High_Dim, type = "jitter", interactive = FALSE)
+
+plot(match_Low_Dim, type = "ecdf", interactive = FALSE)
+```
+
+
+The y-axis displays the value of the covariate for the treated units, and the x-axis displays the the value of the covariate at the corresponding quantile in the control group. When values fall on the 45 degree line, the groups are balanced.
+```{r}
+#eQQ plot
+plot(match_Low_Dim, type = "qq", interactive = FALSE)
+```
+
+
+The most common and recommended way to estimate effects after full matching is to use the computed matching weights to estimate weighted effects.
+```{r}
+
+#fit <- lm(re78 ~ A, data = g.matches_low, weights = weights)
+#coeftest(fit, vcov. = vcovCL, cluster = ~subclass)
+
+
+#Linear model without covariates
+fit1 <- lm(Y ~ A, data = g.matches_low, weights = weights)
+coeftest(fit1, vcov. = vcovCL, cluster = ~subclass)["A",,drop=FALSE]
+```
+
+
+
+including interactions between the treatment and covariates can be beneficial when effect modification by the covariates may be present
+In order to interpret the coefficient on treatment as a marginal effect estimate, we need to center the covariates at their means in the target population.
+Below we use the strategy of centering the covariates at their means. 
+```{r}
+#Estimating a covariate-adjusted marginal effect
+#with treatment-covariate interactions
+
+#Create a new dataset for centered variables
+md_cen <- g.matches_low
+
+covs_to_center <- c("V1", "V2", "V3", "V4", "V5",
+                    "V6", "V7", "V8", "V9", "V10",
+                    "V11", "V12", "V13", "V14","V16",
+                    "V17", "V18","V19","V20","V21", "V22")
+md_cen[covs_to_center] <- scale(md_cen[covs_to_center], 
+                                scale = FALSE)
+
+#Fit the model with every covariate interacting with treatment
+fit2 <- lm(Y ~ A * (V1 + V2 + V3 + V4 + V5 + 
+                      V6 + V7 + V8 + V9 + V10 + V11+ 
+                      V12 + V13 + V14 + V15 + V16 + V17 +
+                      V18 + V19 + V20 + V21 + V22),
+           data = md_cen, weights = weights)
+
+#Only output the intercept and coefficient on treatment
+coeftest(fit2, vcov. = vcovCL, cluster = ~subclass)[1:2,]
+```
 
 #### High Dimensional Data 
 
