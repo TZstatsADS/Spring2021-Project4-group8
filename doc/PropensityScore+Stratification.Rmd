@@ -45,6 +45,10 @@ library(base)
 ```{r}
 df_high <- read.csv("../data/highDim_dataset.csv")
 df_low <- read.csv("../data/lowDim_dataset.csv")
+
+#df_high <- read.csv("C:/Users/sluo1/Desktop/5243/other/Spring2021-Project4-project4group8/data/highDim_dataset.csv")
+#df_low <- read.csv("C:/Users/sluo1/Desktop/5243/other/Spring2021-Project4-project4group8/data/lowDim_dataset.csv")
+
 ```
 
 ## Introduction 
@@ -111,9 +115,9 @@ sample.reweight <- TRUE # run sample reweighting in model training
 # setting the following to false loads data generated from a previous run
 # this data is the same in each run due to a set seed
 
-run.cv.trees_high <- FALSE # run cross-validation on the training set for trees on high dim data
+run.cv.trees_high <- TRUE # run cross-validation on the training set for trees on high dim data
 
-run.cv.trees_low <- FALSE # run cross-validation on the training set for trees on low dim data
+run.cv.trees_low <- TRUE # run cross-validation on the training set for trees on low dim data
 ```
 
 We choose a set of "cp" values here to cross validate in order to find the optimal "cp" value for each data set; here we choose to do powers of two. 
@@ -136,6 +140,13 @@ We source the library functions that we created to help cross validate the "cp" 
 source("../lib/train_trees.R") 
 source("../lib/test_trees.R")
 source("../lib/cross_validation_trees.R")
+
+#source("C:/Users/sluo1/Desktop/5243/other/Spring2021-Project4-project4group8/lib/train_trees.R") 
+#source("C:/Users/sluo1/Desktop/5243/other/Spring2021-Project4-project4group8/lib/test_trees.R")
+#source("C:/Users/sluo1/Desktop/5243/other/Spring2021-Project4-project4group8/lib/cross_validation_trees.R")
+
+
+
 ```
 
 
@@ -168,10 +179,12 @@ if(run.cv.trees_high){
                                          labels = label_train_high,
                                          cp = hyper_grid_trees$cp[i], 
                                          K, reweight = sample.reweight)
-  save(res_cv_trees_high, file = "../output/res_cv_trees_high.RData")
+  save(res_cv_trees_high, file = "/output/res_cv_trees_high.RData")
+  #save(res_cv_trees_high, file = "C:/Users/sluo1/Desktop/5243/other/Spring2021-Project4-project4group8/output/res_cv_trees_high.RData")
   }
 } else{
   load("../output/res_cv_trees_high.RData")
+  #load("C:/Users/sluo1/Desktop/5243/other/Spring2021-Project4-project4group8/output/res_cv_trees_high.RData")
 }
 ```
 
@@ -191,9 +204,11 @@ if(run.cv.trees_low){
                                         cp = hyper_grid_trees$cp[i], 
                                         K, reweight = sample.reweight)
   save(res_cv_trees_low, file="../output/res_cv_trees_low.RData")
+  #save(res_cv_trees_high, file = "C:/Users/sluo1/Desktop/5243/other/Spring2021-Project4-project4group8/output/res_cv_trees_low.RData")
   }
 }else{
   load("../output/res_cv_trees_low.RData")
+  #load("C:/Users/sluo1/Desktop/5243/other/Spring2021-Project4-project4group8/output/res_cv_trees_low.RData")
 }
 ```
 
@@ -660,32 +675,92 @@ We find that the ATE for the low dimensional dataset was `r round(ATE_stratifica
 #### Low Dimensional Data
 
 
+
+
+
+
+
+
+
 ### Weighted Regression
 
-```{r, echo = FALSE}
-summary_high
-summary_low
+```{r setup, include=FALSE}
+library(tidyverse)
+library(glmnet)
+
+df_low$A <- as.factor(df_low$A)
+df_high$A <- as.factor(df_high$A)
 ```
-
-In particular, we see very imbalanced groups within each strata, as shown in the summary tables from the stratification method shown above, which may end up increasing the bias in our estimate of the ATE instead. We would be cautious of advocating for this method even if the ATE estimate was accurate. 
-
-#### High Dimensional Data 
 
 ```{r}
-
-
+set.seed(0)
+X_low <- df_low %>% select(-Y, -A) %>% as.matrix
+A_low <- df_low %>% select(A) %>% as.matrix
 
 ```
-
-
-#### Low Dimensional Data
 
 ```{r}
-
-
+X_high <- df_high %>% select(-Y, -A) %>% as.matrix
+A_high <- df_high %>% select(A) %>% as.matrix
 
 ```
 
+# Finding weights
+```{r}
+weight_low <- cbind(as.numeric(A_low), prop_score_low) %>% 
+  as_tibble %>%
+  mutate(weights = (V1/prop_score_low + (1-V1)/(1-prop_score_low))) %>%
+  select(weights)
+```
+
+```{r}
+weight_high <- cbind(as.numeric(A_high), prop_score_high) %>%
+  as_tibble %>%
+  mutate(weights = (V1/prop_score_high) + (1-V1)/(1-prop_score_high)) %>%
+  select(weights)
+```
+
+# Linear regression for selecting covarites
+```{r}
+filter_low <- summary(lm(Y~., data = df_low))$coef[,4][3:24]<0.05
+Z_low <- cbind(A_low, X_low[,filter_low])
+```
+
+```{r}
+filter_high <- summary(lm(Y~., data = df_high))$coef[,4][3:ncol(X_high)]<0.05
+Z_high <- cbind(A_high, X_high[,filter_high])
+```
+
+# Modify the data
+```{r}
+Z_low <- Z_low %>% apply(2, as.numeric)
+Z_high <- Z_high %>% apply(2, as.numeric)
+```
+
+
+# Final Regression for ATE
+```{r}
+Y_low <- df_low$Y
+Y_high <- df_high$Y
+```
+
+```{r}
+weighted_low <- lm(Y_low ~ Z_low, weights = as.numeric(unlist(weight_low)))
+ATE_low <- coef(weighted_low)[2]
+```
+
+```{r}
+weighted_high <- lm(Y_high ~ Z_high, weights = as.numeric(unlist(weight_high)))
+ATE_high <- coef(weighted_high)[2]
+```
+
+```{r}
+ATE_low
+ATE_high
+```
+
+ATE_low:2.230903
+ATE_high:-57.3501
 
 
 ## Results 
