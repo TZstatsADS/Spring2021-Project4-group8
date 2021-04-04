@@ -838,6 +838,8 @@ A_high <- df_high %>% select(A) %>% as.matrix
 
 #### Finding weights
 ```{r}
+#The weight will be used for the weighted least square estimation of the regression function. (formula 1)
+
 weight_low <- cbind(as.numeric(A_low), prop_score_low) %>% 
   as_tibble %>%
   mutate(weights = (V1/prop_score_low + (1-V1)/(1-prop_score_low))) %>%
@@ -851,6 +853,9 @@ weight_high <- cbind(as.numeric(A_high), prop_score_low) %>%
 
 #### Linear regression for selecting covarites
 ```{r}
+#Calculate the t-statistic
+#we select for Z all the covariates with t-statsitic larger in absolute value than t reg (formula 2)
+
 filter_low <- summary(lm(Y~., data = df_low))$coef[,4][3:24]<0.05
 Z_low <- cbind(A_low, X_low[,filter_low])
 ```
@@ -873,6 +878,7 @@ Y_high <- df_high$Y
 ```
 
 ```{r}
+#fit the weighted regression model and pick the coefficient of the treatment since ATE is the coeff of the treatment Ti (formula 1)
 weighted_low <- lm(Y_low ~ Z_low, weights = as.numeric(unlist(weight_low)))
 ATE_weightedreg_low <- coef(weighted_low)[2]
 ```
