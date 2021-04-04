@@ -1,0 +1,4 @@
+*.R text eol=lf
+*.Rmd text eol=lf
+*.RData binary
+*.rds binary
