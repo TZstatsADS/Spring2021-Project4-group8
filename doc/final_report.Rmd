@@ -702,7 +702,7 @@ individuals in each subclass.
 source("../lib/propensity_matching.R")
 match_High_Dim <- get_match_obj(read.csv(highDim_csv))
 match_Low_Dim <- get_match_obj(read.csv(lowDim_csv))
-#g.matches <- get_matches(matchit.out, data = Any_Dim_Data, distance = prop_score_column_name)
+
 # creates a dataset with one row per unit. It will be identical to the dataset supplied except 
 # that several new columns will be added containing information related to the matching
 g.matches_high <- match.data(match_High_Dim, data = read.csv(highDim_csv), distance = "prop_score")
@@ -724,36 +724,24 @@ whether balance has improved for individual covariates.
 
 ###Standardized Differences of Means After Matching Low Dimensional Data
 ```{r}
-love.plot(match_Low_Dim, binary = "std",drop.distance = TRUE, 
+love.plot(match_Low_Dim,stats = c("mean.diffs", "variance.ratios"), binary = "std",drop.distance = TRUE, 
           var.order = "unadjusted",
           abs = TRUE,
-          thresholds = c(m = .25))
+          thresholds = c(m = .2, v = 2))
 
-love.plot(match_Low_Dim, binary = "std",drop.distance = TRUE, 
+love.plot(match_Low_Dim,stats = c("mean.diffs", "variance.ratios"), binary = "std",drop.distance = TRUE, 
           var.order = "unadjusted",
           abs = FALSE,
-          thresholds = c(m = .25))
+          thresholds = c(m = .2, v = 2))
 ```
 From these plots we see that balance was quite poor prior to matching, but full matching improved balance on all covariates
 
 ###Standardized Differences of Means After Matching High Dimensional Data
 ```{r}
-#plot(summary(match_High_Dim, subclass = TRUE),
-     #var.order = "unmatched", abs = FALSE)
-
-#plot(summary(match_High_Dim, subclass = TRUE),
-     #var.order = "unmatched", abs = TRUE)
-#axis(side=1, tick=FALSE,lwd= 0)
-#set.cobalt.options(binary = "std")
-
 list1 <- seq(1, 200, by=1)
-empty_vec <- seq(1, 200, by=1)
+empty_vec <- rep("", 200)
 
-#empty_vec <- rep(" ", 200)
-
-
-
-empty_vec=paste0(empty_vec," ")
+#empty_vec=vector(length =  200, " ")
 list1=paste0("V",list1)
 
 
@@ -772,9 +760,16 @@ the standardized difference of means of each covariate has decreased after match
 
 For continuous covariates, we can also examine quantile–quantile (QQ) plots, which compare the empirical distributions of each variable.
 QQ plots compare the quantiles of a variable in the treatment group against the corresponding quantiles in the control group. If the two groups have identical empirical distributions, all points would lie on the 45 degree line.
+###eQQ Low Dimensional Data
 ```{r}
 #eQQ plot
 plot(match_Low_Dim, type = "qq", interactive = FALSE)
+```
+
+###eQQ High Dimensional Data
+```{r}
+#eQQ plot
+plot(match_High_Dim, type = "qq", interactive = FALSE, which.xs = c("V176","V172", "V169", "V166", "V164", "V157"))
 ```
 The y-axis displays the value of the covariate for the treated units, and the x-axis displays the the value of the covariate at the corresponding quantile in the control group. When values fall on the 45 degree line, the groups are balanced.
 We can see that some covariates remain somewhat imbalanced, but other covariates have much better balance after matching than before.
@@ -807,39 +802,32 @@ plot(match_Low_Dim, type = "jitter", interactive = FALSE)
 
 ###Calculating the ATE after Full matching
 
-The most common and recommended way to estimate effects after full matching is to use the computed matching weights to estimate weighted effects.
+Including interactions between the treatment and covariates can be beneficial when effect modification by the covariates may be present.
+In order to interpret the coefficient on treatment as a marginal effect estimate, we need to center the covariates at their means in the target population.
+Below we use the strategy of centering the covariates at their means.
 ```{r}
-#Linear model without covariates
-fit1 <- lm(Y ~ A, data = g.matches_high, weights = weights)
-result_high_ATE<-coeftest(fit1, vcov. = vcovCL, cluster = ~subclass)["A",,drop=FALSE]
-ATE_fullmatching_high <- result_high_ATE[1][1]
+
+md_cen <- g.matches_high
+ATE_fullmatching_high_fit <- get_ATE_using_treatment_covariate_interactions(g.matches_high,185)
+
+#Only output the intercept and coefficient on treatment
+result_ATE_high<-coeftest(ATE_fullmatching_high_fit, vcov. = vcovCL, cluster = ~subclass)[1:2,]
+
+
+ATE_fullmatching_high <- result_ATE_high[2][1]
+ATE_fullmatching_high
 ```
 
 
-
-including interactions between the treatment and covariates can be beneficial when effect modification by the covariates may be present
-In order to interpret the coefficient on treatment as a marginal effect estimate, we need to center the covariates at their means in the target population.
-Below we use the strategy of centering the covariates at their means. 
 ```{r}
-#Estimating a covariate-adjusted marginal effect
-#with treatment-covariate interactions
-#Create a new dataset for centered variables
 md_cen <- g.matches_low
-covs_to_center <- c("V1", "V2", "V3", "V4", "V5",
-                    "V6", "V7", "V8", "V9", "V10",
-                    "V11", "V12", "V13", "V14","V16",
-                    "V17", "V18","V19","V20","V21", "V22")
-md_cen[covs_to_center] <- scale(md_cen[covs_to_center], 
-                                scale = FALSE)
-#Fit the model with every covariate interacting with treatment
-fit2 <- lm(Y ~ A * (V1 + V2 + V3 + V4 + V5 + 
-                      V6 + V7 + V8 + V9 + V10 + V11+ 
-                      V12 + V13 + V14 + V15 + V16 + V17 +
-                      V18 + V19 + V20 + V21 + V22),
-           data = md_cen, weights = weights)
+ATE_fullmatching_low_fit <- get_ATE_using_treatment_covariate_interactions(g.matches_low,22)
+
 #Only output the intercept and coefficient on treatment
-result_low_ATE<-coeftest(fit2, vcov. = vcovCL, cluster = ~subclass)[1:2,]
-ATE_fullmatching_low <- result_low_ATE[2][1]
+result_ATE_low<-coeftest(ATE_fullmatching_low_fit, vcov. = vcovCL, cluster = ~subclass)[1:2,]
+
+ATE_fullmatching_low <- result_ATE_low[2][1]
+ATE_fullmatching_low
 ```
 
 
