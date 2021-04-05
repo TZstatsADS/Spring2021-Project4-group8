@@ -24,25 +24,6 @@ First, we set working directories as needed, install required libraries and impo
 setwd("~/Desktop/project4_5243/repo/doc")
 ```
 
-```{r, warning = FALSE, message = FALSE, echo = FALSE,include=FALSE}
-packages.used <- c("dplyr", "ggplot2", "WeightedROC", "rpart", "rpart.plot")
-
-# check packages that need to be installed.
-packages.needed <- setdiff(packages.used, intersect(installed.packages()[,1], packages.used))
-
-# install additional packages
-if(length(packages.needed) > 0){
-   install.packages(packages.needed, dependencies = TRUE)
-}
-
-library(dplyr)
-library(ggplot2)
-library(WeightedROC)
-library(rpart)
-library(rpart.plot)
-library(base)
-library(MatchIt)
-```
 
 ```{r, warning = FALSE, message = FALSE, echo = FALSE, include=FALSE}
 packages.used=as.list(
@@ -55,7 +36,9 @@ packages.used=as.list(
     "MatchIt",
     "optmatch",
     "lmtest",
-    "sandwich")
+    "sandwich",
+    "Matching",
+    "cobalt")
 )
 check.pkg = function(x){
   if(!require(x, character.only=T)) install.packages(x, 
@@ -74,6 +57,8 @@ library(data.table)
 library(optmatch)
 library(lmtest)
 library(sandwich)
+library(Matching)
+library(cobalt)
 ```
 
 
@@ -734,48 +719,100 @@ $$\tilde{p}(X|T=1)=\tilde{p}(X|T=0)$$
 where $\tilde{p}$ denotes the empirical distribution.
 
 
-a plot of the standardized differences of means, gives us a quick overview of
-whether balance has improved for individual covariates
+A plot of the standardized differences of means, gives us a quick overview of
+whether balance has improved for individual covariates.
+
+###Standardized Differences of Means After Matching Low Dimensional Data
 ```{r}
-#plot(summary(match_Low_Dim, interactions = TRUE), var.order = "unmatched")
-plot(summary(match_Low_Dim, subclass = TRUE),
-     var.order = "unmatched", abs = FALSE)
-plot(summary(match_Low_Dim, subclass = TRUE),
-     var.order = "unmatched", abs = TRUE)
+love.plot(match_Low_Dim, binary = "std",drop.distance = TRUE, 
+          var.order = "unadjusted",
+          abs = TRUE,
+          thresholds = c(m = .25))
+
+love.plot(match_Low_Dim, binary = "std",drop.distance = TRUE, 
+          var.order = "unadjusted",
+          abs = FALSE,
+          thresholds = c(m = .25))
 ```
-the standardized difference of means of each covariate has decreased after matching
-For regression adjustment to be trustworthy, the absolute standardized differences of means should be less than 0.25
+From these plots we see that balance was quite poor prior to matching, but full matching improved balance on all covariates
 
-
-For continuous covariates, we can also examine
-quantile–quantile (QQ) plots, which compare the empirical distributions of each variable
-
-
-QQ plots compare the quantiles of a variable
-in the treatment group against the corresponding quantiles in the control group. If the two groups have identical empirical distributions, all points would lie on the 45 degree line
-
-
-Statistics related to the difference in the empirical cumulative density functions (eCDFs) of each covariate between groups allow assessment of imbalance across the entire covariate distribution of that covariate rather than just its mean or variance.
+###Standardized Differences of Means After Matching High Dimensional Data
 ```{r}
-plot(match_High_Dim, type = "jitter", interactive = FALSE)
-plot(match_Low_Dim, type = "ecdf", interactive = FALSE)
+#plot(summary(match_High_Dim, subclass = TRUE),
+     #var.order = "unmatched", abs = FALSE)
+
+#plot(summary(match_High_Dim, subclass = TRUE),
+     #var.order = "unmatched", abs = TRUE)
+#axis(side=1, tick=FALSE,lwd= 0)
+#set.cobalt.options(binary = "std")
+
+list1 <- seq(1, 200, by=1)
+empty_vec <- seq(1, 200, by=1)
+
+#empty_vec <- rep(" ", 200)
+
+
+
+empty_vec=paste0(empty_vec," ")
+list1=paste0("V",list1)
+
+
+
+v <- data.frame(old = list1,
+                new = empty_vec)
+
+
+love.plot(match_High_Dim, binary = "std",drop.distance = TRUE, 
+          var.order = "unadjusted",
+          abs = TRUE,
+          thresholds = c(m = .25), var.names = v) #line = TRUE
 ```
+the standardized difference of means of each covariate has decreased after matching.
 
 
-The y-axis displays the value of the covariate for the treated units, and the x-axis displays the the value of the covariate at the corresponding quantile in the control group. When values fall on the 45 degree line, the groups are balanced.
+For continuous covariates, we can also examine quantile–quantile (QQ) plots, which compare the empirical distributions of each variable.
+QQ plots compare the quantiles of a variable in the treatment group against the corresponding quantiles in the control group. If the two groups have identical empirical distributions, all points would lie on the 45 degree line.
 ```{r}
 #eQQ plot
 plot(match_Low_Dim, type = "qq", interactive = FALSE)
 ```
+The y-axis displays the value of the covariate for the treated units, and the x-axis displays the the value of the covariate at the corresponding quantile in the control group. When values fall on the 45 degree line, the groups are balanced.
+We can see that some covariates remain somewhat imbalanced, but other covariates have much better balance after matching than before.
 
+
+Statistics related to the difference in the empirical cumulative density functions (eCDFs) of each covariate between groups allow assessment of imbalance across the entire covariate distribution of that covariate rather than just its mean or variance.
+
+###eCDFs Low Dimensional Data
+```{r}
+plot(match_Low_Dim, type = "ecdf", interactive = FALSE)
+```
+
+
+###eCDFs High Dimensional Data
+```{r}
+plot(match_High_Dim, type = "ecdf", interactive = FALSE, which.xs = c("V103","V121","V131","V138","V137","V136","V139", "V140", "V141", "V141"))
+```
+The x-axis display the covariate values and the y-axis display the proportion of the sample at or less than that covariate value. Perfectly overlapping lines indicate good balance. The black line corresponds to the treated group and the gray line to the control group.
+
+We see adequate overlap of the propensity scores, with a good control match for each treated individual. For weighting or
+subclassification, plots such as the ones below show the dots with their size proportional to their weight.
+###Distribution of Propensity Scores High Dimensional Data
+```{r}
+plot(match_High_Dim, type = "jitter", interactive = FALSE)
+```
+###Distribution of Propensity Scores Low Dimensional Data
+```{r}
+plot(match_Low_Dim, type = "jitter", interactive = FALSE)
+```
+
+###Calculating the ATE after Full matching
 
 The most common and recommended way to estimate effects after full matching is to use the computed matching weights to estimate weighted effects.
 ```{r}
-#fit <- lm(re78 ~ A, data = g.matches_low, weights = weights)
-#coeftest(fit, vcov. = vcovCL, cluster = ~subclass)
 #Linear model without covariates
-fit1 <- lm(Y ~ A, data = g.matches_low, weights = weights)
-coeftest(fit1, vcov. = vcovCL, cluster = ~subclass)["A",,drop=FALSE]
+fit1 <- lm(Y ~ A, data = g.matches_high, weights = weights)
+result_high_ATE<-coeftest(fit1, vcov. = vcovCL, cluster = ~subclass)["A",,drop=FALSE]
+ATE_fullmatching_high <- result_high_ATE[1][1]
 ```
 
 
@@ -801,7 +838,8 @@ fit2 <- lm(Y ~ A * (V1 + V2 + V3 + V4 + V5 +
                       V18 + V19 + V20 + V21 + V22),
            data = md_cen, weights = weights)
 #Only output the intercept and coefficient on treatment
-coeftest(fit2, vcov. = vcovCL, cluster = ~subclass)[1:2,]
+result_low_ATE<-coeftest(fit2, vcov. = vcovCL, cluster = ~subclass)[1:2,]
+ATE_fullmatching_low <- result_low_ATE[2][1]
 ```
 
 
