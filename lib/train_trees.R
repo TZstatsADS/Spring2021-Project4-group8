@@ -1,4 +1,4 @@
-train <- function(features, labels, w = NULL, cp){
+train <- function(features, labels, w = NULL, maxdepth){
   
   # features: the covariates in the data: V1-VP
   # labels: the treatment class in the data: A
@@ -11,7 +11,7 @@ train <- function(features, labels, w = NULL, cp){
                  weights = w,
                  data = as.data.frame(cbind(features, labels)), 
                  
-                 cp = cp, # hyperparameter 1
+                 maxdepth = maxdepth, # hyperparameter 1
                  )
   return(model)
 }

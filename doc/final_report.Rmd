@@ -164,10 +164,7 @@ We choose a set of "cp" values here to cross validate in order to find the optim
 ```{r}
 # hyperparameters for trees
 hyper_grid_trees <- expand.grid(
-  cp = c(2^(0), 2^(-1), 2^(-2), 2^(-3), 2^(-4), 
-         2^(-5), 2^(-6), 2^(-7), 2^(-8), 2^(-9), 
-         2^(-10), 2^(-11), 2^(-12), 2^(-13), 2^(-14), 
-         2^(-15), 2^(-16), 2^(-17), 0, -2^(0))
+  maxdepth = c(1, 5, 10, 15, 20, 25, 30)
 )
 ```
 
@@ -209,7 +206,7 @@ if(run.cv.trees_high){
     cat("complexity = ", hyper_grid_trees$cp[i], "\n", sep = "")
     res_cv_trees_high[i,] <- cv.function(features = feature_train_high, 
                                          labels = label_train_high,
-                                         cp = hyper_grid_trees$cp[i], 
+                                         maxdepth = hyper_grid_trees$maxdepth[i], 
                                          K, reweight = sample.reweight)
   save(res_cv_trees_high, file = "../output/res_cv_trees_high.RData")
   }
@@ -231,7 +228,7 @@ if(run.cv.trees_low){
     cat("complexity = ", hyper_grid_trees$cp[i], "\n", sep = "")
     res_cv_trees_low[i,] <- cv.function(features = feature_train_low, 
                                         labels = label_train_low, 
-                                        cp = hyper_grid_trees$cp[i], 
+                                        maxdepth = hyper_grid_trees$maxdepth[i], 
                                         K, reweight = sample.reweight)
   save(res_cv_trees_low, file="../output/res_cv_trees_low.RData")
   }
@@ -242,14 +239,14 @@ if(run.cv.trees_low){
 
 ### Step 3: Visualize CV Error and AUC
 
-After cross validating, we obtain the mean error and the AUC values for each potential "cp" value for both data sets. We display these values and associated standard errors in the plots below. 
+After cross validating, we obtain the mean error and the AUC values for each potential "maxdepth" value for both data sets. We display these values and associated standard errors in the plots below. 
 
 Because of the imbalances in the groups for both datasets, we choose to not only weigh our observations, but to also focus on mean AUC when selecting the optimal hyperparameter. 
 
 
 #### High Dimensional Data 
 
-Based on the plots and table below, we find that the model with the highest mean AUC value has a "cp" value of $2^{-7}$.
+Based on the plots and table below, we find that the model with the highest mean AUC value has a "maxdepth" value of $5$.
 
 ```{r}
 # create data frame to organize results
@@ -262,38 +259,34 @@ cv_results_trees_high[order(cv_results_trees_high$mean_AUC, decreasing = TRUE), 
 ```
 
 ```{r, out.width = "85%", fig.align = 'center', echo=FALSE}
-# round hyperparameter values
-cp_2 <- signif(hyper_grid_trees$cp, 3)
-
-
 # cross validation results for high dimensional data: mean_error 
 cv_results_trees_high %>% 
-  ggplot(aes(x = as.factor(cp_2), y = mean_error,
+  ggplot(aes(x = as.factor(maxdepth), y = mean_error,
             ymin = mean_error - sd_error, 
             ymax = mean_error + sd_error)) + 
-  labs(title="Mean of Error with Different cp Values for High Dimensional Data ",
-       x="cp", y = "Mean of Error") +
+  labs(title="Mean of Error with Different Maxdepth Values for High Dimensional Data ",
+       x="maxdepth", y = "Mean of Error") +
   geom_crossbar() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 # cross validation results for high dimensional data: mean_AUC
 cv_results_trees_high %>% 
-  ggplot(aes(x = as.factor(cp_2), y = mean_AUC,
+  ggplot(aes(x = as.factor(maxdepth), y = mean_AUC,
              ymin = mean_AUC - sd_AUC, ymax = mean_AUC + sd_AUC)) + 
-  labs(title="Mean of AUC with Different cp Values for High Dimensional Data ",
-       x="cp", y = "Mean of AUC")+
+  labs(title="Mean of AUC with Different Maxdepth Values for High Dimensional Data ",
+       x="maxdepth", y = "Mean of AUC")+
   geom_crossbar() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 ```{r}
-best_cp_high <- cv_results_trees_high$cp[cv_results_trees_high$mean_AUC ==
+best_maxdepth_high <- cv_results_trees_high$maxdepth[cv_results_trees_high$mean_AUC ==
                                            max(cv_results_trees_high$mean_AUC)]
 
-best_cp_high
+best_maxdepth_high
 ```
 
 #### Low Dimensional Data 
 
-Based on the plots and table below, we find that the model with the highest mean AUC value has a "cp" value of $2^{-18}$.
+Based on the plots and table below, we find that the model with the highest mean AUC value has a "maxdepth" value of $25$.
 
 ```{r}
 # create data frame to organize results
@@ -306,30 +299,28 @@ cv_results_trees_low[order(cv_results_trees_low$mean_AUC, decreasing = TRUE), ][
 ```
 
 ```{r, out.width = "85%", fig.align = 'center', echo=FALSE}
-# cross validation results for low dimensional data: mean_error 
 cv_results_trees_low %>%
-  ggplot(aes(x = as.factor(cp_2), y = mean_error,
+  ggplot(aes(x = as.factor(maxdepth), y = mean_error,
             ymin = mean_error - sd_error, 
             ymax = mean_error + sd_error)) + 
-  labs(title="Mean of Error with Different cp Values for Low Dimensional Data ",
-       x="cp", y = "Mean of Error")+
+  labs(title="Mean of Error with Different Maxdepth Values for Low Dimensional Data ",
+       x="maxdepth", y = "Mean of Error")+
   geom_crossbar() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 # cross validation results for low dimensional data: mean_AUC
 cv_results_trees_low %>% 
-  ggplot(aes(x = as.factor(cp_2), y = mean_AUC,
+  ggplot(aes(x = as.factor(maxdepth), y = mean_AUC,
              ymin = mean_AUC - sd_AUC, ymax = mean_AUC + sd_AUC)) + 
-  labs(title="Mean of AUC with Different cp Values for Low Dimensional Data ",
-       x="cp", y = "Mean of AUC")+
+  labs(title="Mean of AUC with Different Maxdepth Values for Low Dimensional Data ",
+       x="maxdepth", y = "Mean of AUC")+
   geom_crossbar() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 
 ```{r}
-best_cp_low <- cv_results_trees_low$cp[cv_results_trees_low$mean_AUC ==
+best_maxdepth_low <- cv_results_trees_low$maxdepth[cv_results_trees_low$mean_AUC ==
                                            max(cv_results_trees_low$mean_AUC)]
-
-best_cp_low
+best_maxdepth_low
 ```
 
 ## Propensity Score Estimation
@@ -358,7 +349,7 @@ for (v in unique(df_low$A)){
 start.time_propensity_score_high <- Sys.time()
 
 # create tree model for high dimensional data with best cp parameter
-tree_high <- rpart(A ~ . - Y, method = "class", data = df_high, cp = best_cp_high)
+tree_high <- rpart(A ~ . - Y, method = "class", data = df_high, maxdepth = best_maxdepth_high)
 
 # calculate propensity scores
 prop_score_high <- predict(tree_high, newdata = df_high[, -2], type = "prob")[, 2]
@@ -379,7 +370,7 @@ rpart.plot(tree_high, type = 1, digits = 3, fallen.leaves = TRUE)
 start.time_propensity_score_low <- Sys.time()
 
 # create tree model for low dimensional data with best cp parameter
-tree_low <- rpart(A ~ . - Y, method = "class", data = df_low, cp = best_cp_low)
+tree_low <- rpart(A ~ . - Y, method = "class", data = df_low, maxdepth = best_maxdepth_low)
 
 # calculate propensity scores
 prop_score_low <- predict(tree_low, newdata = df_low[, -2], type = "prob")[, 2]
