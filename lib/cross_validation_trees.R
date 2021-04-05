@@ -1,12 +1,12 @@
 # cross-validation
 
-cv.function <- function(features, labels, K, cp, reweight = FALSE){
+cv.function <- function(features, labels, K, maxdepth, reweight = FALSE){
   
   
   # features: the covariates in the data: V1-VP
   # labels: the treatment class in the data: A
   # K: number of fold for cross-validation
-  # cp: complexity hyperparameter for decision trees
+  # maxdepth: maxdepth hyperparameter for decision trees
   # reweight: boolean to determine if weights need to change
   
   n <- dim(features)[1]
@@ -32,9 +32,9 @@ cv.function <- function(features, labels, K, cp, reweight = FALSE){
     
     ## model training
     if (reweight){
-      model_train <- train(feature_train_cv, label_train_cv, w = weight_train_cv, cp)
+      model_train <- train(feature_train_cv, label_train_cv, w = weight_train_cv, maxdepth)
     } else {
-      model_train <- train(feature_train_cv, label_train_cv, w = NULL, cp)
+      model_train <- train(feature_train_cv, label_train_cv, w = NULL, maxdepth)
     }
     
     ## make predictions
@@ -53,5 +53,4 @@ cv.function <- function(features, labels, K, cp, reweight = FALSE){
 #features = df_high[, -1:-2]
 #labels = df_high[, 2]
 #reweight = TRUE
-#cp = 0.05
-#maxdepth = 10
+
