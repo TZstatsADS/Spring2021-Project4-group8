@@ -286,7 +286,7 @@ best_maxdepth_high
 
 #### Low Dimensional Data 
 
-Based on the plots and table below, we find that the model with the highest mean AUC value has a "cp" value of $2^{-18}$.
+Based on the plots and table below, we find that the model with the highest mean AUC value has a "maxdepth" value of $25$.
 
 ```{r}
 # create data frame to organize results
