@@ -10,7 +10,7 @@ get_match_obj <- function(Any_Dim_Data, propensity_score=NULL){
     matchit.out <- matchit(A ~ . - Y, data = Any_Dim_Data, distance = "rpart", verbose = TRUE, estimand = "ATE", method = "full")
   }
   
-
+  
   return(matchit.out)
   
 }

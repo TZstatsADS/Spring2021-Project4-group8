@@ -38,7 +38,9 @@ packages.used=as.list(
     "lmtest",
     "sandwich",
     "Matching",
-    "cobalt")
+    "cobalt",
+    "tidyverse",
+    "glmnet")
 )
 check.pkg = function(x){
   if(!require(x, character.only=T)) install.packages(x, 
@@ -59,6 +61,8 @@ library(lmtest)
 library(sandwich)
 library(Matching)
 library(cobalt)
+library(tidyverse)
+library(glmnet)
 ```
 
 
@@ -489,8 +493,8 @@ individuals in each subclass.
 #### Getting the Data Loaded for High and Low Dimension Data
 ```{r}
 source("../lib/propensity_matching.R")
-match_High_Dim <- get_match_obj(read.csv(highDim_csv))
-match_Low_Dim <- get_match_obj(read.csv(lowDim_csv))
+match_High_Dim <- get_match_obj(read.csv(highDim_csv), prop_score_high)
+match_Low_Dim <- get_match_obj(read.csv(lowDim_csv), prop_low_high)
 
 # creates a dataset with one row per unit. It will be identical to the dataset supplied except 
 # that several new columns will be added containing information related to the matching
@@ -634,8 +638,6 @@ We calculate the t-statistic for the test of the null hypothesis that the slope 
 #### Loading the Data and Data Preprocessing
 
 ```{r , include=FALSE}
-library(tidyverse)
-library(glmnet)
 df_low$A <- as.factor(df_low$A)
 df_high$A <- as.factor(df_high$A)
 ```
