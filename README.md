@@ -8,7 +8,7 @@ Term: Spring 2021
 + Projec title: Causal Inference
 + Team members
 	+ Dennis Shpits
-	+ April Yang
+	+ Yutong(April) Yang
 	+ Feng Rong
 	+ Ellen Chen
 	+ Hao Hu
