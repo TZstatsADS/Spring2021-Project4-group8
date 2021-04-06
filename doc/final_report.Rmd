@@ -237,7 +237,7 @@ Because of the imbalances in the groups for both datasets, we choose to not only
 
 #### High Dimensional Data 
 
-Based on the plots and table below, we find that the model with the highest mean AUC value has a "maxdepth" value of $5$.
+Based on the plots and table below, we find that the model with the highest mean AUC value has a "maxdepth" value of $30$.
 
 ```{r}
 # create data frame to organize results
@@ -277,7 +277,7 @@ best_maxdepth_high
 
 #### Low Dimensional Data 
 
-Based on the plots and table below, we find that the model with the highest mean AUC value has a "maxdepth" value of $25$.
+Based on the plots and table below, we find that the model with the highest mean AUC value has a "maxdepth" value of $20$.
 
 ```{r}
 # create data frame to organize results
@@ -595,9 +595,9 @@ where $K$ is the number of strata, $\hat{e}$ is the estimated propensity score, 
 # Timing the process -- start
 start.time_stratification_low <- Sys.time()
 
-prop_score <- g.matches_low$prop_score
-df_low <- cbind(df_low, prop_score)
-df_strat_low <- df_low[,c("Y","A","prop_score")]
+prop_score <- prop_score_low
+df_strat_low <- cbind(df_low, prop_score)
+df_strat_low <- df_strat_low[,c("Y","A","prop_score")]
 
 strata_low_1 <- df_strat_low[df_strat_low$prop_score <= 0.125, ]
 sum_strata_low_1 <- strata_low_1 %>%
@@ -651,10 +651,9 @@ The ATE of low dimensional data calculated by stratification is 4.388841.
 # Timing the process -- start
 start.time_stratification_high <- Sys.time()
 
-prop_score <- g.matches_high$prop_score
-
-df_high <- cbind(df_high, prop_score)
-df_strat_high <- df_high[,c("Y","A","prop_score")]
+prop_score <- prop_score_high
+df_strat_high <- cbind(df_high, prop_score)
+df_strat_high <- df_strat_high[,c("Y","A","prop_score")]
 
 strata_high_1 <- df_strat_high[df_strat_high$prop_score <= 0.3, ]
 sum_strata_high_1 <- strata_high_1 %>%
@@ -809,7 +808,7 @@ ATE <- as.table(ATE)
 ATE
 ```
 
-From the table above, we see that regression adjustment performed the best for the high dimensional data and stratification performed the best for the low dimensional data. 
+From the table above, we see that weighted regression performed the best for the high dimensional data and propensity matching performed the best for the low dimensional data. 
 
 ### Run Time Results
 
