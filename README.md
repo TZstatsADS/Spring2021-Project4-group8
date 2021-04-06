@@ -12,9 +12,25 @@ Term: Spring 2021
 	+ Feng Rong
 	+ Ellen Chen
 	+ Hao Hu
-+ Project summary: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
++ Project summary: In this project, we implemented stratification, propensity matching and weighted regression on the high and low dimensional dataset. The propensity score was estimated using regression trees. Then we calculated the Average Treatment Effect(ATE) using all the three methods. We evaluate the three methods in terms of runtime and the accuracy of their ATE estimation. \n For the stratification method, we divided the high dimensional data into 6 stratums and the low dimensional data into 2 stratums.
+
++ **Result**
+
+ATE | High Dimension Data | Low Dimension Data
+------------ | ------------- | -------------
+True ATE | -54.855800 | 2.090100
+Stratification | -61.932886 | 4.388841
+Propensity Matching | -57.492971 | 2.073773
+Weighted Regression | -57.164089 | 2.305857
+
+Runtime | High Dimension Data | Low Dimension Data
+------------ | ------------- | -------------
+PS Estimation | 1.09668183 | 0.03268313
+Stratification | 0.01617503 | 0.04357100
+Propensity Matching | 0.11255002 | 0.11195898
+Weighted Regression | 0.15968490 | 0.15398812
 	
-**Contribution statement**: [default] Dennis Shpits worked on the propensity matching algorithm. Feng Rong worked on the stratification algorithm. All team members contributed equally in all stages of this project. All team members approve our work presented in this GitHub repository including this contributions statement. 
+**Contribution statement**: [default] Dennis Shpits worked on the propensity matching algorithm. Feng Rong worked on the stratification algorithm. Yutong (April) Yang initialized group contact, set up the framework for the final report and the presentation slides, merged all the codes together, wrote part of the comparison of results and the final conclusion. All team members contributed equally in all stages of this project. All team members approve our work presented in this GitHub repository including this contributions statement. 
 
 Following [suggestions](http://nicercode.github.io/blog/2013-04-05-projects/) by [RICH FITZJOHN](http://nicercode.github.io/about/#Team) (@richfitz). This folder is orgarnized as follows.
 
