@@ -149,10 +149,7 @@ We choose a set of "cp" values here to cross validate in order to find the optim
 ```{r}
 # hyperparameters for trees
 hyper_grid_trees <- expand.grid(
-  cp = c(2^(0), 2^(-1), 2^(-2), 2^(-3), 2^(-4), 
-         2^(-5), 2^(-6), 2^(-7), 2^(-8), 2^(-9), 
-         2^(-10), 2^(-11), 2^(-12), 2^(-13), 2^(-14), 
-         2^(-15), 2^(-16), 2^(-17), 0, -2^(0))
+  maxdepth = c(1, 5, 10, 15, 20, 25, 30)
 )
 ```
 
@@ -194,7 +191,7 @@ if(run.cv.trees_high){
     cat("complexity = ", hyper_grid_trees$cp[i], "\n", sep = "")
     res_cv_trees_high[i,] <- cv.function(features = feature_train_high, 
                                          labels = label_train_high,
-                                         cp = hyper_grid_trees$cp[i], 
+                                         maxdepth = hyper_grid_trees$maxdepth[i], 
                                          K, reweight = sample.reweight)
   save(res_cv_trees_high, file = "../output/res_cv_trees_high.RData")
   }
@@ -216,7 +213,7 @@ if(run.cv.trees_low){
     cat("complexity = ", hyper_grid_trees$cp[i], "\n", sep = "")
     res_cv_trees_low[i,] <- cv.function(features = feature_train_low, 
                                         labels = label_train_low, 
-                                        cp = hyper_grid_trees$cp[i], 
+                                        maxdepth = hyper_grid_trees$maxdepth[i], 
                                         K, reweight = sample.reweight)
   save(res_cv_trees_low, file="../output/res_cv_trees_low.RData")
   }
@@ -227,14 +224,14 @@ if(run.cv.trees_low){
 
 ### Step 3: Visualize CV Error and AUC
 
-After cross validating, we obtain the mean error and the AUC values for each potential "cp" value for both data sets. We display these values and associated standard errors in the plots below. 
+After cross validating, we obtain the mean error and the AUC values for each potential "maxdepth" value for both data sets. We display these values and associated standard errors in the plots below. 
 
 Because of the imbalances in the groups for both datasets, we choose to not only weigh our observations, but to also focus on mean AUC when selecting the optimal hyperparameter. 
 
 
 #### High Dimensional Data 
 
-Based on the plots and table below, we find that the model with the highest mean AUC value has a "cp" value of $2^{-7}$.
+Based on the plots and table below, we find that the model with the highest mean AUC value has a "maxdepth" value of $5$.
 
 ```{r}
 # create data frame to organize results
@@ -247,38 +244,34 @@ cv_results_trees_high[order(cv_results_trees_high$mean_AUC, decreasing = TRUE), 
 ```
 
 ```{r, out.width = "85%", fig.align = 'center', echo=FALSE}
-# round hyperparameter values
-cp_2 <- signif(hyper_grid_trees$cp, 3)
-
-
 # cross validation results for high dimensional data: mean_error 
 cv_results_trees_high %>% 
-  ggplot(aes(x = as.factor(cp_2), y = mean_error,
+  ggplot(aes(x = as.factor(maxdepth), y = mean_error,
             ymin = mean_error - sd_error, 
             ymax = mean_error + sd_error)) + 
-  labs(title="Mean of Error with Different cp Values for High Dimensional Data ",
-       x="cp", y = "Mean of Error") +
+  labs(title="Mean of Error with Different Maxdepth Values for High Dimensional Data ",
+       x="maxdepth", y = "Mean of Error") +
   geom_crossbar() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 # cross validation results for high dimensional data: mean_AUC
 cv_results_trees_high %>% 
-  ggplot(aes(x = as.factor(cp_2), y = mean_AUC,
+  ggplot(aes(x = as.factor(maxdepth), y = mean_AUC,
              ymin = mean_AUC - sd_AUC, ymax = mean_AUC + sd_AUC)) + 
-  labs(title="Mean of AUC with Different cp Values for High Dimensional Data ",
-       x="cp", y = "Mean of AUC")+
+  labs(title="Mean of AUC with Different Maxdepth Values for High Dimensional Data ",
+       x="maxdepth", y = "Mean of AUC")+
   geom_crossbar() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 ```{r}
-best_cp_high <- cv_results_trees_high$cp[cv_results_trees_high$mean_AUC ==
+best_maxdepth_high <- cv_results_trees_high$maxdepth[cv_results_trees_high$mean_AUC ==
                                            max(cv_results_trees_high$mean_AUC)]
 
-best_cp_high
+best_maxdepth_high
 ```
 
 #### Low Dimensional Data 
 
-Based on the plots and table below, we find that the model with the highest mean AUC value has a "cp" value of $2^{-18}$.
+Based on the plots and table below, we find that the model with the highest mean AUC value has a "maxdepth" value of $25$.
 
 ```{r}
 # create data frame to organize results
@@ -291,30 +284,28 @@ cv_results_trees_low[order(cv_results_trees_low$mean_AUC, decreasing = TRUE), ][
 ```
 
 ```{r, out.width = "85%", fig.align = 'center', echo=FALSE}
-# cross validation results for low dimensional data: mean_error 
 cv_results_trees_low %>%
-  ggplot(aes(x = as.factor(cp_2), y = mean_error,
+  ggplot(aes(x = as.factor(maxdepth), y = mean_error,
             ymin = mean_error - sd_error, 
             ymax = mean_error + sd_error)) + 
-  labs(title="Mean of Error with Different cp Values for Low Dimensional Data ",
-       x="cp", y = "Mean of Error")+
+  labs(title="Mean of Error with Different Maxdepth Values for Low Dimensional Data ",
+       x="maxdepth", y = "Mean of Error")+
   geom_crossbar() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 # cross validation results for low dimensional data: mean_AUC
 cv_results_trees_low %>% 
-  ggplot(aes(x = as.factor(cp_2), y = mean_AUC,
+  ggplot(aes(x = as.factor(maxdepth), y = mean_AUC,
              ymin = mean_AUC - sd_AUC, ymax = mean_AUC + sd_AUC)) + 
-  labs(title="Mean of AUC with Different cp Values for Low Dimensional Data ",
-       x="cp", y = "Mean of AUC")+
+  labs(title="Mean of AUC with Different Maxdepth Values for Low Dimensional Data ",
+       x="maxdepth", y = "Mean of AUC")+
   geom_crossbar() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 
 ```{r}
-best_cp_low <- cv_results_trees_low$cp[cv_results_trees_low$mean_AUC ==
+best_maxdepth_low <- cv_results_trees_low$maxdepth[cv_results_trees_low$mean_AUC ==
                                            max(cv_results_trees_low$mean_AUC)]
-
-best_cp_low
+best_maxdepth_low
 ```
 
 ## Propensity Score Estimation
@@ -343,7 +334,7 @@ for (v in unique(df_low$A)){
 start.time_propensity_score_high <- Sys.time()
 
 # create tree model for high dimensional data with best cp parameter
-tree_high <- rpart(A ~ . - Y, method = "class", data = df_high, cp = best_cp_high)
+tree_high <- rpart(A ~ . - Y, method = "class", data = df_high, maxdepth = best_maxdepth_high)
 
 # calculate propensity scores
 prop_score_high <- predict(tree_high, newdata = df_high[, -2], type = "prob")[, 2]
@@ -364,7 +355,7 @@ rpart.plot(tree_high, type = 1, digits = 3, fallen.leaves = TRUE)
 start.time_propensity_score_low <- Sys.time()
 
 # create tree model for low dimensional data with best cp parameter
-tree_low <- rpart(A ~ . - Y, method = "class", data = df_low, cp = best_cp_low)
+tree_low <- rpart(A ~ . - Y, method = "class", data = df_low, maxdepth = best_maxdepth_low)
 
 # calculate propensity scores
 prop_score_low <- predict(tree_low, newdata = df_low[, -2], type = "prob")[, 2]
@@ -385,297 +376,95 @@ With the estimated propensity scores on hand, we propose, explain, and discuss t
 
 ### Stratification
 
-In the stratification method, we are trying to achieve groups where propensity scores hold approximately. For choosing number of strata, $K$, five ($5$) was advocated by Rosenbaum and Rubin (1984). However, in our case, choosing $K = 5$ will lead to empty stratum for both high and low dimensional data.
+In the stratification method, we aim at dividing the data set into strata such that the propensity scores in each stratum are close enough. For choosing number of strata, $K$, five ($5$) was advocated by Rosenbaum and Rubin (1984). However, the propensity scores generated by CART are discrete numbers that are not proportional to the quantiles. If we divide the data into five strata by quantiles, each having roughly 20% of the total number of objects, the propensity scores in each stratum might not be similar.
 
 ```{r include=FALSE}
-K = 5
-strata <- seq(0, 1, by = 1/K)
-df_high_k5 <- cbind(df_high, prop_score_high)
-stratum_values_high <- rep(NA, length(strata))
-  
-for (i in 1:length(strata)){
-  stratum_values_high[i] <- quantile(prop_score_high, strata[i])
-}
+#propensity score by quantiles for low dimensional data set
+Quantile_data <- as.double(seq(0.2, 100, 0.2))
+Propensity_Score_low <- sort(g.matches_low$prop_score)
+prop_low <- data.frame(cbind(Quantile_data, Propensity_Score_low)) 
+g1 <- ggplot(prop_low, mapping = aes(x = Quantile_data, y = Propensity_Score_low)) +
+  geom_point()
+g1
 
-# values of strata for high data
-stratum_values_high
-
-df_high_k5$stratum_class_high <- rep(NA, nrow(df_high_k5))
-
-# assign stratum class to each observation
-for (i in 1:nrow(df_high_k5)){
-  if ((stratum_values_high[1] <= df_high_k5$prop_score_high[i]) & 
-      (df_high_k5$prop_score_high[i] < stratum_values_high[2])) {
-    df_high_k5$stratum_class_high[i] <- 1
-  } else if ((stratum_values_high[2] <= df_high_k5$prop_score_high[i]) & 
-             (df_high_k5$prop_score_high[i] < stratum_values_high[3])) {
-    df_high_k5$stratum_class_high[i] <- 2
-  } else if ((stratum_values_high[3] <= df_high_k5$prop_score_high[i]) & 
-             (df_high_k5$prop_score_high[i] <= stratum_values_high[4])) {
-    df_high_k5$stratum_class_high[i] <- 3 
-  } else if ((stratum_values_high[4] <= df_high_k5$prop_score_high[i]) & 
-             (df_high_k5$prop_score_high[i] <= stratum_values_high[5])) {
-    df_high_k5$stratum_class_high[i] <- 4
-  } else if ((stratum_values_high[5] <= df_high_k5$prop_score_high[i]) & 
-             (df_high_k5$prop_score_high[i] <= stratum_values_high[6])) {
-    df_high_k5$stratum_class_high[i] <- 5 
-  }
-}
-
-summary_high_k5 = expand.grid(
-  A = c(0, 1), 
-  stratum = seq(1, K, by = 1), 
-  n = NA, 
-  prop = NA, 
-  avg_y = NA
-)
-
-for (i in 1:nrow(summary_high_k5)) {
-  subset <- df_high_k5[(df_high_k5$A == summary_high_k5$A[i]) & 
-                      (df_high_k5$stratum_class_high == summary_high_k5$stratum[i]), ]
-  summary_high_k5$n[i] = nrow(subset)
-  summary_high_k5$prop[i] = summary_high_k5$n[i]/nrow(df_high_k5)
-  summary_high_k5$avg_y[i] = mean(subset$Y)
-}
-
-
-for (i in 1:nrow(summary_high_k5)) {
-  if (is.nan(summary_high_k5$avg_y[i]) == TRUE) {
-    summary_high_k5$avg_y[i] <- 0 
-  }
-}
+#propensity score by quantiles for high dimensional data set
+Quantile_data <- as.double(seq(0.05, 100, 0.05))
+Propensity_Score_high <- sort(g.matches_high$prop_score)
+prop_high <- data.frame(cbind(Quantile_data, Propensity_Score_high)) 
+g2 <- ggplot(prop_high, mapping = aes(x = Quantile_data, y = Propensity_Score_high)) +
+  geom_point()
+g2
 ```
+Therefore, we divided the low dimensional data set into 6 stratum, and the high dimensional data set into 2 stratum, where propensity score in each strata is either uniform or sighnificantly close.
 
-```{r include=FALSE}
-K = 5
-strata <- seq(0, 1, by = 1/K)
-df_low_k5 <- cbind(df_low, prop_score_low)
-stratum_values_low <- rep(NA, length(strata))
-  
-for (i in 1:length(strata)){
-  stratum_values_low[i] <- quantile(prop_score_low, strata[i])
-}
-
-# values of strata for low data
-stratum_values_low
-
-df_low_k5$stratum_class_low <- rep(NA, nrow(df_low_k5))
-
-# assign stratum class to each observation
-for (i in 1:nrow(df_low_k5)){
-  if ((stratum_values_low[1] <= df_low_k5$prop_score_low[i]) & 
-      (df_low_k5$prop_score_low[i] < stratum_values_low[2])) {
-    df_low_k5$stratum_class_low[i] <- 1
-  } else if ((stratum_values_low[2] <= df_low_k5$prop_score_low[i]) & 
-             (df_low_k5$prop_score_low[i] < stratum_values_low[3])) {
-    df_low_k5$stratum_class_low[i] <- 2
-  } else if ((stratum_values_low[3] <= df_low_k5$prop_score_low[i]) & 
-             (df_low_k5$prop_score_low[i] <= stratum_values_low[4])) {
-    df_low_k5$stratum_class_low[i] <- 3 
-  } else if ((stratum_values_low[4] <= df_low_k5$prop_score_low[i]) & 
-             (df_low_k5$prop_score_low[i] <= stratum_values_low[5])) {
-    df_low_k5$stratum_class_low[i] <- 4
-  } else if ((stratum_values_low[5] <= df_low_k5$prop_score_low[i]) & 
-             (df_low_k5$prop_score_low[i] <= stratum_values_low[6])) {
-    df_low_k5$stratum_class_low[i] <- 5 
-  }
-}
-
-summary_low_k5 = expand.grid(
-  A = c(0, 1), 
-  stratum = seq(1, K, by = 1), 
-  n = NA, 
-  prop = NA, 
-  avg_y = NA
-)
-
-for (i in 1:nrow(summary_low_k5)) {
-  subset <- df_low_k5[(df_low_k5$A == summary_low_k5$A[i]) & 
-                      (df_low_k5$stratum_class_low == summary_low_k5$stratum[i]), ]
-  summary_low_k5$n[i] = nrow(subset)
-  summary_low_k5$prop[i] = summary_low_k5$n[i]/nrow(df_low_k5)
-  summary_low_k5$avg_y[i] = mean(subset$Y)
-}
-
-
-for (i in 1:nrow(summary_low_k5)) {
-  if (is.nan(summary_low_k5$avg_y[i]) == TRUE) {
-    summary_low_k5$avg_y[i] <- 0 
-  }
-}
-```
-
-```{r}
-# when K = 5, the second stratus of high and low dimensional data are both empty
-# but we need to make sure each stratum consists at least one object
-
-summary_high_k5
-summary_low_k5
-```
-
-Therefore we choose $K = 3$ strata, which is the highest value of $K$ that do not produce empty stratum. Then we can estimate ATE between treated and untreated subgroups by following formula:
+The following formula was used to calculate the ATE:
 
 ![](../figs/formula_strat.png)
 
 where $K$ is the number of strata, $\hat{e}$ is the estimated propensity score, $Y$ is the response for each observation, and $T$ is the treatment variable (either $0$ or $1$). $N_j$ is the number of individuals in stratum $j$. $N_{1j}$ is the number of “treated” individuals in stratum $j$, while $N_{0j}$ is the number of “controlled” individuals in stratum $j$. $\hat{Q_j} = (\hat{q_{j-1}}, \hat{q_j}]$ where $\hat{q_j}$ is the $j$th sample quantile of the estimated propensity scores.
 
-The advantage of stratification is that it controls systematic differences between the control and treated groups. However, as we mentioned earlier, stratification has imbalance issues in each stratum. In some extreme cases, where some strata may contain subjects from only the treated group or control group, it becomes impossible to estimate treatment effect. What’s more, Lunceford and Davidian (2004) demonstrated that stratification results in estimates of average treatment effects with greater bias than does a variety of weighted estimators.
+#### Low Dimensional Data 
 
 ```{r}
-K = 3
-strata <- seq(0, 1, by = 1/K)
+prop_score <- g.matches_low$prop_score
+df_low <- cbind(df_low, prop_score)
+df_strat_low <- df_low %>%
+  select(Y, A, prop_score)
+strata_low_1 <- df_strat_low[df_strat_low$prop_score <= 0.125, ]
+sum_strata_low_1 <- strata_low_1 %>%
+  group_by(A) %>%
+  summarise(Avg_Y = mean(Y))
+strata_low_2 <- df_strat_low[0.125 < df_strat_low$prop_score & df_strat_low$prop_score <= 0.250, ]
+sum_strata_low_2 <- strata_low_2 %>%
+  group_by(A) %>%
+  summarise(Avg_Y = mean(Y))
+strata_low_3 <- df_strat_low[0.250 < df_strat_low$prop_score & df_strat_low$prop_score <= 0.5, ]
+sum_strata_low_3 <- strata_low_3 %>%
+  group_by(A) %>%
+  summarise(Avg_Y = mean(Y))
+strata_low_4 <- df_strat_low[0.5 < df_strat_low$prop_score & df_strat_low$prop_score <= 0.75, ]
+sum_strata_low_4 <- strata_low_4 %>%
+  group_by(A) %>%
+  summarise(Avg_Y = mean(Y))
+strata_low_5 <- df_strat_low[0.75 < df_strat_low$prop_score & df_strat_low$prop_score <= 0.875, ]
+sum_strata_low_5 <- strata_low_5 %>%
+  group_by(A) %>%
+  summarise(Avg_Y = mean(Y))
+strata_low_6 <- df_strat_low[0.875 < df_strat_low$prop_score, ]
+sum_strata_low_6 <- strata_low_6 %>%
+  group_by(A) %>%
+  summarise(Avg_Y = mean(Y))
+
+ATE_Stratification_low <- as.double(((sum_strata_low_1[2,2] - sum_strata_low_1[1,2])*nrow(strata_low_1) + (sum_strata_low_2[2,2] - sum_strata_low_2[1,2])*nrow(strata_low_2) +
+(sum_strata_low_3[2,2] - sum_strata_low_3[1,2])*nrow(strata_low_3) +
+(sum_strata_low_4[2,2] - sum_strata_low_4[1,2])*nrow(strata_low_4) +
+(sum_strata_low_5[2,2] - sum_strata_low_5[1,2])*nrow(strata_low_5) +
+(sum_strata_low_6[1,2])*nrow(strata_low_6))/nrow(df_strat_low))
+ATE_Stratification_low
 ```
+The ATE of low dimensional data calculated by stratification is 4.388841.
+
 
 #### High Dimensional Data 
 
 ```{r}
-start.time_stratification_high <- Sys.time()
+prop_score <- g.matches_high$prop_score
+df_high <- cbind(df_high, prop_score)
+df_strat_high <- df_high %>%
+  select(Y, A, prop_score)
+strata_high_1 <- df_strat_high[df_strat_high$prop_score <= 0.3, ]
+sum_strata_high_1 <- strata_high_1 %>%
+  group_by(A) %>%
+  summarise(Avg_Y = mean(Y))
+strata_high_2 <- df_strat_high[0.3 < df_strat_high$prop_score, ]
+sum_strata_high_2 <- strata_high_2 %>%
+  group_by(A) %>%
+  summarise(Avg_Y = mean(Y))
 
-df_high <- cbind(df_high, prop_score_high)
-stratum_values_high <- rep(NA, length(strata))
-  
-for (i in 1:length(strata)){
-  stratum_values_high[i] <- quantile(prop_score_high, strata[i])
-}
-
-# values of strata for high data
-stratum_values_high
-
-df_high$stratum_class_high <- rep(NA, nrow(df_high))
-
-# assign stratum class to each observation
-for (i in 1:nrow(df_high)){
-  if ((stratum_values_high[1] <= df_high$prop_score_high[i]) & 
-      (df_high$prop_score_high[i] < stratum_values_high[2])) {
-    df_high$stratum_class_high[i] <- 1
-  } else if ((stratum_values_high[2] <= df_high$prop_score_high[i]) & 
-             (df_high$prop_score_high[i] < stratum_values_high[3])) {
-    df_high$stratum_class_high[i] <- 2
-  } else if ((stratum_values_high[3] <= df_high$prop_score_high[i]) & 
-             (df_high$prop_score_high[i] <= stratum_values_high[4])) {
-    df_high$stratum_class_high[i] <- 3 
-  }
-}
-
-summary_high = expand.grid(
-  A = c(0, 1), 
-  stratum = seq(1, K, by = 1), 
-  n = NA, 
-  prop = NA, 
-  avg_y = NA
-)
-
-for (i in 1:nrow(summary_high)) {
-  subset <- df_high[(df_high$A == summary_high$A[i]) & 
-                      (df_high$stratum_class_high == summary_high$stratum[i]), ]
-  summary_high$n[i] = nrow(subset)
-  summary_high$prop[i] = summary_high$n[i]/nrow(df_high)
-  summary_high$avg_y[i] = mean(subset$Y)
-}
-
-
-for (i in 1:nrow(summary_high)) {
-  if (is.nan(summary_high$avg_y[i]) == TRUE) {
-    summary_high$avg_y[i] <- 0 
-  }
-}
-
-# this table records the mean response in each stratum; needed for stratification
-summary_high
-
-stratum_prop_high <- summary_high %>% group_by(stratum) %>% summarise(sum = sum(n)/nrow(df_high))
-
-# this table records the proportions for each stratum; also needed for stratification
-stratum_prop_high
-
-ATE_stratification_high = stratum_prop_high$sum[1]*(summary_high$avg_y[2] - summary_high$avg_y[1]) + 
-  stratum_prop_high$sum[2]*(summary_high$avg_y[4] - summary_high$avg_y[3]) + 
-  stratum_prop_high$sum[3]*(summary_high$avg_y[6] - summary_high$avg_y[5])
-
-ATE_stratification_high
-
-end.time_stratification_high <- Sys.time()
-time_stratification_high <- end.time_stratification_high - start.time_stratification_high
-time_stratification_high
+ATE_Stratification_high <- as.double(((sum_strata_high_1[2,2] - sum_strata_high_1[1,2])*nrow(strata_high_1) + (sum_strata_high_2[2,2] - sum_strata_high_2[1,2])*nrow(strata_high_2)) /nrow(df_high))
+ATE_Stratification_high
 ```
-
-We find that the ATE for the high dimensional dataset was `r round(ATE_stratification_high, 3)` with a run time of `r round(time_stratification_high, 3)` seconds. 
-
-#### Low Dimensional Data
-
-```{r}
-start.time_stratification_low <- Sys.time()
-
-df_low <- cbind(df_low, prop_score_low)
-stratum_values_low <- rep(NA, length(strata))
-
-for (i in 1:length(strata)){
-  stratum_values_low[i] <- quantile(prop_score_low, strata[i])
-}
-
-# values of strata for low data
-stratum_values_low
-
-df_low$stratum_class_low <- rep(NA, nrow(df_low))
-
-# assign stratum class to each observation
-for (i in 1:nrow(df_low)){
-  if ((stratum_values_low[1] <= df_low$prop_score_low[i]) & 
-      (df_low$prop_score_low[i] < stratum_values_low[2])) {
-    df_low$stratum_class_low[i] <- 1
-  } else if ((stratum_values_low[2] <= df_low$prop_score_low[i]) & 
-             (df_low$prop_score_low[i] < stratum_values_low[3])) {
-    df_low$stratum_class_low[i] <- 2
-  } else if ((stratum_values_low[3] <= df_low$prop_score_low[i]) & 
-             (df_low$prop_score_low[i] <= stratum_values_low[4])) {
-    df_low$stratum_class_low[i] <- 3 
-  } 
-}
-
-
-summary_low = expand.grid(
-  A = c(0, 1), 
-  stratum = seq(1, K, by = 1),
-  n = NA, 
-  prop = NA, 
-  avg_y = NA
-)
-
-for (i in 1:nrow(summary_low)) {
-  subset <- df_low[(df_low$A == summary_low$A[i]) & 
-                     (df_low$stratum_class_low == summary_low$stratum[i]), ]
-  summary_low$n[i] = nrow(subset)
-  summary_low$prop[i] = summary_low$n[i]/nrow(df_low)
-  summary_low$avg_y[i] = mean(subset$Y)
-}
-
-
-for (i in 1:nrow(summary_low)) {
-  if (is.nan(summary_low$avg_y[i]) == TRUE) {
-    summary_low$avg_y[i] <- 0 
-  }
-}
-
-# this table records the mean response in each stratum; needed for stratification
-summary_low
-
-stratum_prop_low <- summary_low %>% group_by(stratum) %>% summarise(sum = sum(n)/nrow(df_low))
-
-# this table records the proportions for each stratum; also needed for stratification
-stratum_prop_low
-
-ATE_stratification_low = stratum_prop_low$sum[1]*(summary_low$avg_y[2] - summary_low$avg_y[1]) + 
-  stratum_prop_low$sum[2]*(summary_low$avg_y[4] - summary_low$avg_y[3]) + 
-  stratum_prop_low$sum[3]*(summary_low$avg_y[6] - summary_low$avg_y[5]) 
-
-ATE_stratification_low
-
-end.time_stratification_low <- Sys.time()
-time_stratification_low <- end.time_stratification_low - start.time_stratification_low
-time_stratification_low
-```
-
-We find that the ATE for the low dimensional dataset was `r round(ATE_stratification_low, 3)` with a run time of `r round(time_stratification_low, 3)` seconds. 
+The ATE of low dimensional data calculated by stratification is -61.93289.
 
 
 
