@@ -12,7 +12,7 @@ Term: Spring 2021
 	+ Feng Rong
 	+ Ellen Chen
 	+ Hao Hu
-+ Project summary: In this project, we implemented stratification, propensity matching and weighted regression on the high and low dimensional dataset. The propensity score was estimated using regression trees. Then we calculated the Average Treatment Effect(ATE) using all the three methods. We evaluate the three methods in terms of runtime and the accuracy of their ATE estimation. \n For the stratification method, we divided the high dimensional data into 6 stratums and the low dimensional data into 2 stratums.
++ Project summary: In this project, we implemented stratification, propensity matching and weighted regression on the high and low dimensional dataset. The propensity score was estimated using regression trees. Then we calculated the Average Treatment Effect(ATE) using all the three methods. We evaluate the three methods in terms of runtime and the accuracy of their ATE estimation. For the stratification method, we divided the high dimensional data into 6 stratums and the low dimensional data into 2 stratums.
 
 + **Result**
 
