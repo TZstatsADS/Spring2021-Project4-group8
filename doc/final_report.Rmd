@@ -400,28 +400,30 @@ After the matched sets are obtained, calculate a “subclass effects” for each
 #### Getting the Data Loaded for High and Low Dimension Data
 ```{r}
 source("../lib/propensity_matching.R")
-match_High_Dim <- get_match_obj(read.csv(highDim_csv))
-match_Low_Dim <- get_match_obj(read.csv(lowDim_csv))
+
+# match.data creates a dataset with one row per unit. It will be identical to the dataset supplied except 
+# that several new columns will be added containing information related to the matching
 
 # Timing the process -- start
 start.time_propensity_matching_low <- Sys.time()
-start.time_propensity_matching_high <- Sys.time()
-
-# creates a dataset with one row per unit. It will be identical to the dataset supplied except 
-# that several new columns will be added containing information related to the matching
-g.matches_high <- match.data(match_High_Dim, data = read.csv(highDim_csv), distance = "prop_score")
+match_Low_Dim <- get_match_obj(read.csv(lowDim_csv))
 g.matches_low <- match.data(match_Low_Dim, data = read.csv(lowDim_csv), distance = "prop_score")
-
 
 # Timing the process -- ends
 end.time_propensity_matching_low <- Sys.time()
 time_propensity_matching_low <- end.time_propensity_matching_low - start.time_propensity_matching_low
 time_propensity_matching_low
 
+
+# Timing the process -- start
+start.time_propensity_matching_high <- Sys.time()
+match_High_Dim <- get_match_obj(read.csv(highDim_csv))
+g.matches_high <- match.data(match_High_Dim, data = read.csv(highDim_csv), distance = "prop_score")
+
+# Timing the process -- ends
 end.time_propensity_matching_high <- Sys.time()
 time_propensity_matching_high <- end.time_propensity_matching_high - start.time_propensity_matching_high
 time_propensity_matching_high
-
 ```
 
 
@@ -462,22 +464,6 @@ love.plot(match_High_Dim,stats = c("mean.diffs", "variance.ratios"), binary = "s
           var.order = "unadjusted",
           abs = FALSE,
           thresholds = c(m = .25, v = 2))
-```
-
-```{r}
-# list1 <- seq(1, 200, by=1)
-# empty_vec <- rep("", 200)
-# 
-# #empty_vec=vector(length =  200, " ")
-# list1=paste0("V",list1)
-# 
-# v <- data.frame(old = list1,
-#                 new = empty_vec)
-# 
-# love.plot(match_High_Dim, binary = "std",drop.distance = TRUE, 
-#           var.order = "unadjusted",
-#           abs = TRUE,
-#           thresholds = c(m = .25), var.names = v) #line = TRUE
 ```
 the standardized difference of means of each covariate has decreased after matching.
 
