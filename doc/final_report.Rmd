@@ -401,16 +401,12 @@ After the matched sets are obtained, calculate a “subclass effects” for each
 ```{r}
 source("../lib/propensity_matching.R")
 
+# match.data creates a dataset with one row per unit. It will be identical to the dataset supplied except 
+# that several new columns will be added containing information related to the matching
+
 # Timing the process -- start
 start.time_propensity_matching_low <- Sys.time()
-start.time_propensity_matching_high <- Sys.time()
-
-match_High_Dim <- get_match_obj(read.csv(highDim_csv))
 match_Low_Dim <- get_match_obj(read.csv(lowDim_csv))
-
-# creates a dataset with one row per unit. It will be identical to the dataset supplied except 
-# that several new columns will be added containing information related to the matching
-g.matches_high <- match.data(match_High_Dim, data = read.csv(highDim_csv), distance = "prop_score")
 g.matches_low <- match.data(match_Low_Dim, data = read.csv(lowDim_csv), distance = "prop_score")
 
 # Timing the process -- ends
@@ -418,6 +414,13 @@ end.time_propensity_matching_low <- Sys.time()
 time_propensity_matching_low <- end.time_propensity_matching_low - start.time_propensity_matching_low
 time_propensity_matching_low
 
+
+# Timing the process -- start
+start.time_propensity_matching_high <- Sys.time()
+match_High_Dim <- get_match_obj(read.csv(highDim_csv))
+g.matches_high <- match.data(match_High_Dim, data = read.csv(highDim_csv), distance = "prop_score")
+
+# Timing the process -- ends
 end.time_propensity_matching_high <- Sys.time()
 time_propensity_matching_high <- end.time_propensity_matching_high - start.time_propensity_matching_high
 time_propensity_matching_high
