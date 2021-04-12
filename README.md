@@ -34,7 +34,8 @@ Weighted Regression | 0.15968490 | 0.15398812
 	Dennis Shpits worked on the propensity matching algorithm. 
 	Feng Rong worked on the stratification algorithm. 
 	Yutong (April) Yang initialized group contact, set up the framework for the final report and the presentation slides, wrote the part of the comparison of results and the final conclusion. 
-	Ellen Chen worked on cross validation and parameters tuning for maxdepth and get the propensity score for regression tree model. 
+	Ellen Chen worked on cross validation and parameters tuning for maxdepth and get the propensity score for regression tree model.
+	Hao worked on the weighted regression algorithm. 
 	All team members contributed equally in all stages of this project. All team members approve our work presented in this GitHub repository including this contributions statement. 
 
 Following [suggestions](http://nicercode.github.io/blog/2013-04-05-projects/) by [RICH FITZJOHN](http://nicercode.github.io/about/#Team) (@richfitz). This folder is orgarnized as follows.
